@@ -21,3 +21,5 @@
 go.work
 kubeconfig_*
 cluster-role*
+
+dist/
