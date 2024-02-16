@@ -114,13 +114,13 @@ func main() {
 	serviceAccountName = strings.ReplaceAll(serviceAccountName, ".", "-")
 
 	// Create service account
-	cmd = exec.Command("kubectl", "delete", "serviceaccount", serviceAccountName)
+	cmd = exec.Command("kubectl", "delete", "serviceaccount", serviceAccountName, "--namespace=kube-system")
 	err = cmd.Run()
 	if err != nil {
 		fmt.Printf("Error deleting old service account: %v\n", err)
 	}
 	if !deleteSa {
-		cmd = exec.Command("kubectl", "create", "serviceaccount", serviceAccountName)
+		cmd = exec.Command("kubectl", "create", "serviceaccount", serviceAccountName, "--namespace=kube-system")
 		err = cmd.Run()
 		if err != nil {
 			fmt.Printf("Error creating service account: %v\n", err)
@@ -131,7 +131,7 @@ func main() {
 	// Create service account token
 	var serviceAccountToken []byte
 	if !deleteSa {
-		cmd = exec.Command("kubectl", "create", "token", serviceAccountName, "--duration=999999h")
+		cmd = exec.Command("kubectl", "create", "token", serviceAccountName, "--duration=999999h", "--namespace=kube-system")
 		serviceAccountToken, err = cmd.Output()
 		if err != nil {
 			fmt.Printf("Error creating service account token: %v\n", err)
@@ -234,7 +234,7 @@ rules:
 		fmt.Printf("Error deleting old clusterrolebinding: %v\n", err)
 	}
 	if !deleteSa {
-		cmd = exec.Command("kubectl", "create", "clusterrolebinding", serviceAccountName+"-binding", "--clusterrole=custom-cluster-role", "--serviceaccount=default:"+serviceAccountName)
+		cmd = exec.Command("kubectl", "create", "clusterrolebinding", serviceAccountName+"-binding", "--clusterrole="+serviceAccountName+"-cluster-role", "--serviceaccount=kube-system:"+serviceAccountName)
 		err = cmd.Run()
 		if err != nil {
 			fmt.Printf("Error creating cluster role binding: %v\n", err)
@@ -246,7 +246,7 @@ rules:
 	if !deleteSa {
 		var caDataFlag bool
 		var caData string
-		cmd = exec.Command("kubectl", "config", "view", "raw=true", "--minify", "--output", "jsonpath={.clusters[*].cluster.certificate-authority-data}")
+		cmd := exec.Command("kubectl", "config", "view", "--raw=true", "--minify", "--output=jsonpath={.clusters[*].cluster.certificate-authority-data}")
 		caDataOutput, err := cmd.Output()
 		if err != nil {
 			fmt.Println("Warning: No certificate authority data found, insecure-skip-tls-verify: true will be used")
@@ -276,7 +276,7 @@ kind: Config
 users:
 - name: %s
   user:
-    token: %s`, caData, clusterServer, currentContext, currentContext, currentContext, currentContext, currentContext, serviceAccountName, serviceAccountToken)
+    token: %s`, caData, clusterServer, currentContext, currentContext, serviceAccountName, currentContext, currentContext, serviceAccountName, serviceAccountToken)
 		} else {
 			kubeconfig = fmt.Sprintf(`apiVersion: v1
 clusters:
@@ -295,7 +295,7 @@ kind: Config
 users:
 - name: %s
   user:
-    token: %s`, clusterServer, currentContext, currentContext, currentContext, currentContext, currentContext, serviceAccountName, serviceAccountToken)
+    token: %s`, clusterServer, currentContext, currentContext, serviceAccountName, currentContext, currentContext, serviceAccountName, serviceAccountToken)
 		}
 		// Save kubeconfig to file
 		err = os.WriteFile("kubeconfig_"+serviceAccountName, []byte(kubeconfig), 0644)
