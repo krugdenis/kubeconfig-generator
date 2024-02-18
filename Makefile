@@ -1,5 +1,4 @@
 BINARY_NAME := kubeconfig-generator
-VERSION := 1.0.2
 OS := $(shell go env GOOS)
 
 .PHONY: build release
@@ -13,6 +12,5 @@ build:
 	fi
 
 release:
-	@echo "Creating release $(VERSION)..."
-	@go run github.com/goreleaser/goreleaser release --clean
-	@go run github.com/goreleaser/goreleaser release --clean
+	@echo "Creating release ..."
+	@goreleaser release --clean
